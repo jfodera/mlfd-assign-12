@@ -10,17 +10,13 @@
 #include <vector>
 #include <limits>
 
-// ===================================================================
-// Module class
-// ===================================================================
-
 class Module {
 private:
-    Eigen::MatrixXd weights_;  // output_dim x input_dim
-    Eigen::VectorXd biases_;   // output_dim
-    Eigen::MatrixXd inputs_;   // N x input_dim (batch)
-    Eigen::MatrixXd outputs_;  // N x output_dim (batch)
-    Eigen::MatrixXd deltas_;   // N x output_dim (batch)
+    Eigen::MatrixXd weights_;
+    Eigen::VectorXd biases_;
+    Eigen::MatrixXd inputs_;
+    Eigen::MatrixXd outputs_;
+    Eigen::MatrixXd deltas_;
 
 public:
     Module(size_t input_dim, size_t output_dim)
@@ -35,7 +31,6 @@ public:
     void set_weights(const Eigen::MatrixXd& new_weights) { weights_ = new_weights; }
     void set_biases(const Eigen::VectorXd& new_biases) { biases_ = new_biases; }
 
-    // Batch forward (inputs: N x input_dim)
     Eigen::MatrixXd forward(const Eigen::MatrixXd& inputs,
                             std::function<Eigen::MatrixXd(const Eigen::MatrixXd&)> activation = nullptr) {
         inputs_ = inputs;
@@ -49,14 +44,12 @@ public:
         return outputs_;
     }
 
-    // Batch backward for hidden layers
     Eigen::MatrixXd backward(const Eigen::MatrixXd& next_weights, const Eigen::MatrixXd& next_deltas) {
         Eigen::MatrixXd deriv = (1.0 - outputs_.array().square()).matrix();
         deltas_ = deriv.cwiseProduct(next_deltas * next_weights);
         return deltas_;
     }
 
-    // Batch backward for output layer
     Eigen::MatrixXd last_backward(const Eigen::MatrixXd& outputs, const Eigen::MatrixXd& targets,
                                   std::function<Eigen::MatrixXd(const Eigen::MatrixXd&)> deriv_func) {
         Eigen::MatrixXd deriv = deriv_func(outputs);
@@ -64,26 +57,19 @@ public:
         return deltas_;
     }
 
-    // Compute weight gradient (prev_outputs: N x prev_dim) -> output_dim x prev_dim
     Eigen::MatrixXd compute_grad_weights(const Eigen::MatrixXd& prev_outputs) const {
         return (deltas_.transpose() * prev_outputs) / static_cast<double>(prev_outputs.rows());
     }
 
-    // Compute bias gradient -> output_dim
     Eigen::VectorXd compute_grad_biases() const {
         return deltas_.colwise().mean();
     }
 
-    // Update parameters
     void update(const Eigen::MatrixXd& grad_w, const Eigen::VectorXd& grad_b, double rate) {
         weights_ -= rate * grad_w;
         biases_ -= rate * grad_b;
     }
 };
-
-// ===================================================================
-// Model class
-// ===================================================================
 
 class Model {
 private:
@@ -92,9 +78,9 @@ private:
 public:
     Model(const std::vector<Module>& layers) : layers_(layers) {}
 
+    const std::vector<Module>& layers() { return layers_; }
     const std::vector<Module>& layers() const { return layers_; }
 
-    // Batch forward (X: N x input_dim) -> N x output_dim
     Eigen::MatrixXd forward(const Eigen::MatrixXd& X,
                             std::function<Eigen::MatrixXd(const Eigen::MatrixXd&)> last_activation = nullptr) {
         Eigen::MatrixXd out = X;
@@ -104,7 +90,6 @@ public:
         return layers_.back().forward(out, last_activation);
     }
 
-    // Batch backward
     void backward(const Eigen::MatrixXd& outputs, const Eigen::MatrixXd& targets,
                   std::function<Eigen::MatrixXd(const Eigen::MatrixXd&)> last_deriv) {
         Eigen::MatrixXd next_delta = layers_.back().last_backward(outputs, targets, last_deriv);
@@ -113,7 +98,6 @@ public:
         }
     }
 
-    // Batch error
     double compute_error(const Eigen::MatrixXd& outputs, const Eigen::MatrixXd& targets, double reg_lambda) {
         size_t N = outputs.rows();
         size_t dim = outputs.cols();
@@ -129,7 +113,6 @@ public:
         return e_in + reg;
     }
 
-    // Batch gradient descent
     void gradient_descent(const Eigen::MatrixXd& X, const Eigen::MatrixXd& y,
                           std::vector<Eigen::MatrixXd>& grads_w, std::vector<Eigen::VectorXd>& grads_b,
                           double& e_in, double reg_lambda,
@@ -157,7 +140,6 @@ public:
         }
     }
 
-    // Variable LR GD (same as before, but using batch GD)
     void dynamic_rate_optimization(
         const Eigen::MatrixXd& X, const Eigen::MatrixXd& y,
         std::vector<double>& errors, std::vector<double>& val_errors,
@@ -253,7 +235,6 @@ public:
         }
     }
 
-    // Batch test error
     double appraise_evaluation(const Eigen::MatrixXd& eval_X, const Eigen::MatrixXd& eval_y,
                                std::function<Eigen::MatrixXd(const Eigen::MatrixXd&)> terminal_activation = nullptr) {
         Eigen::MatrixXd outputs = forward(eval_X, terminal_activation);

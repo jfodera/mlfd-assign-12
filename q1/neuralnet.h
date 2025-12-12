@@ -10,10 +10,6 @@
 #include <vector>
 #include <limits>
 
-// ===================================================================
-// Module class (fully defined first)
-// ===================================================================
-
 class Module {
 private:
     Eigen::MatrixXd param_mat;
@@ -87,10 +83,6 @@ public:
     }
 };
 
-// ===================================================================
-// Model class
-// ===================================================================
-
 class Model {
 private:
     std::vector<Module> components;
@@ -102,7 +94,6 @@ public:
         components = fresh_comps;
     }
 
-    // Changed return type to const reference to fix the binding error in prob1.cpp
     const std::vector<Module>& retrieve_components() const {
         return components;
     }
@@ -223,7 +214,6 @@ public:
                                    int max_cycles = 1000,
                                    double precision = 1e-6,
                                    int endurance = 10,
-                                   // Removed unused halt_limit parameter
                                    std::function<Eigen::VectorXd(const Eigen::VectorXd&)> terminal_activation = nullptr,
                                    std::function<Eigen::VectorXd(const Eigen::VectorXd&)> terminal_deactivation = nullptr,
                                    const std::vector<Eigen::VectorXd>& check_entries = {},
@@ -248,7 +238,6 @@ public:
         }
 
         int cycle_count = 0;
-        // Removed unused prior_discrep variable
         while (cycle_count < max_cycles) {
             if (cycle_count % 10000 == 0) {
                 std::cout << "Completed cycle " << cycle_count << std::endl;
@@ -320,9 +309,6 @@ public:
             }
         }
     }
-
-    // random_sample_optimization and appraise_evaluation remain unchanged
-    // (they were already fine, just keeping them for completeness)
 
     void random_sample_optimization(const std::vector<Eigen::VectorXd>& entries,
                                     const std::vector<Eigen::VectorXd>& goals,
@@ -432,4 +418,4 @@ public:
     }
 };
 
-#endif // NEURALNET_H
+#endif 
